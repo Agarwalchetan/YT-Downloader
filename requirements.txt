@@ -1,0 +1,17 @@
+# YT-Downloader Backend Dependencies
+
+# Web Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Video Downloading
+yt-dlp>=2024.1.0
+
+# Data Validation
+pydantic>=2.5.0
+
+# HTTP Client (for potential future use)
+httpx>=0.25.0
+
+# Async support
+aiofiles>=23.2.0
