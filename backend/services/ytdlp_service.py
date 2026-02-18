@@ -7,10 +7,12 @@ import os
 import re
 import uuid
 import shutil
-import tempfile
 import asyncio
 from typing import Optional, Callable, Dict, Any, List
 from pathlib import Path
+
+# Default temp directory inside the project (backend/temp_downloads/)
+DEFAULT_DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'temp_downloads')
 
 import yt_dlp
 
@@ -56,9 +58,9 @@ class YTDLPService:
         Initialize the YT-DLP service.
         
         Args:
-            download_dir: Directory for temporary downloads. Uses system temp if not specified.
+            download_dir: Directory for temporary downloads. Uses backend/temp_downloads/ if not specified.
         """
-        self.download_dir = download_dir or tempfile.gettempdir()
+        self.download_dir = download_dir or DEFAULT_DOWNLOAD_DIR
         os.makedirs(self.download_dir, exist_ok=True)
     
     def _check_ffmpeg(self) -> bool:
@@ -259,8 +261,7 @@ class YTDLPService:
             'quiet': True,
             'no_warnings': True,
             'extract_flat': False,
-            # Options to help bypass bot detection
-            'extractor_args': {'youtube': {'player_client': ['web']}},
+            # Use default player clients for maximum format availability
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             },
@@ -385,7 +386,6 @@ class YTDLPService:
             'progress_hooks': [progress_hook],
             'quiet': True,
             'no_warnings': True,
-            'extractor_args': {'youtube': {'player_client': ['web']}},
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             },
@@ -515,7 +515,6 @@ class YTDLPService:
             'progress_hooks': [progress_hook],
             'quiet': True,
             'no_warnings': True,
-            'extractor_args': {'youtube': {'player_client': ['web']}},
             'http_headers': {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
             },

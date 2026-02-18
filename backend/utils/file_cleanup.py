@@ -1,6 +1,7 @@
 """
 File Cleanup Utilities - Handles temporary file management and cleanup.
 Ensures downloaded files are properly removed after streaming to client.
+Only cleans up files within the project's own temp_downloads directory.
 """
 
 import os
@@ -13,6 +14,12 @@ import threading
 import time
 
 logger = logging.getLogger(__name__)
+
+# Default temp directory inside the project (backend/temp_downloads/)
+DEFAULT_DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'temp_downloads')
+
+# File extensions that this app creates (safety guard for cleanup)
+ALLOWED_EXTENSIONS = {'.mp4', '.mkv', '.webm', '.mp3', '.m4a', '.opus', '.part', '.tmp'}
 
 
 class FileCleanupManager:
@@ -91,6 +98,7 @@ class FileCleanupManager:
     def cleanup_old_files(self) -> int:
         """
         Clean up files older than max_age_minutes.
+        Only deletes files with known media extensions as a safety guard.
         
         Returns:
             Number of files deleted
@@ -103,6 +111,11 @@ class FileCleanupManager:
                 file_path = os.path.join(self.download_dir, filename)
                 
                 if not os.path.isfile(file_path):
+                    continue
+                
+                # Safety guard: only delete files with known media extensions
+                _, ext = os.path.splitext(filename)
+                if ext.lower() not in ALLOWED_EXTENSIONS:
                     continue
                 
                 # Check file modification time
@@ -158,8 +171,8 @@ def get_cleanup_manager(download_dir: Optional[str] = None) -> FileCleanupManage
     """Get or create the cleanup manager instance"""
     global _cleanup_manager
     if _cleanup_manager is None:
-        import tempfile
-        download_dir = download_dir or tempfile.gettempdir()
+        download_dir = download_dir or DEFAULT_DOWNLOAD_DIR
+        os.makedirs(download_dir, exist_ok=True)
         _cleanup_manager = FileCleanupManager(download_dir)
     return _cleanup_manager
 

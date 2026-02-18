@@ -37,6 +37,7 @@ async def lifespan(app: FastAPI):
     # Initialize cleanup manager and start periodic cleanup
     cleanup_manager = get_cleanup_manager()
     cleanup_manager.start_periodic_cleanup(interval_minutes=15)
+    logger.info(f"Temp downloads directory: {cleanup_manager.download_dir}")
     logger.info("Started periodic file cleanup")
     
     yield
