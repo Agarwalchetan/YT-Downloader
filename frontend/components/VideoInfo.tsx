@@ -1,44 +1,34 @@
 'use client';
 
-import { VideoInfo as VideoInfoType } from '@/lib/api';
-import { Clock, Eye, User, Calendar, MonitorPlay, Volume2 } from 'lucide-react';
 import Image from 'next/image';
+import { VideoInfo as VideoInfoType } from '@/lib/api';
+import { Clock, Eye, User, Calendar, MonitorPlay, Volume2, ExternalLink } from 'lucide-react';
 
 interface VideoInfoProps {
   info: VideoInfoType;
 }
 
-function formatNumber(num: number | null): string {
-  if (num === null) return 'N/A';
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + 'M';
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + 'K';
-  }
-  return num.toString();
+function fmt(n: number | null): string {
+  if (n === null) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000)     return (n / 1_000).toFixed(1) + 'K';
+  return n.toLocaleString();
 }
 
-function formatDate(dateStr: string | null): string {
-  if (!dateStr) return 'N/A';
-  // Format: YYYYMMDD -> YYYY-MM-DD
-  if (dateStr.length === 8) {
-    const year = dateStr.slice(0, 4);
-    const month = dateStr.slice(4, 6);
-    const day = dateStr.slice(6, 8);
-    return `${year}-${month}-${day}`;
-  }
-  return dateStr;
+function fmtDate(s: string | null): string {
+  if (!s) return '—';
+  if (s.length === 8) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+  return s;
 }
 
 export default function VideoInfo({ info }: VideoInfoProps) {
   return (
-    <div className="bg-gray-700/30 rounded-xl p-4 md:p-6 border border-gray-600/50">
-      <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-        {/* Thumbnail */}
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 overflow-hidden">
+      {/* Thumbnail + title */}
+      <div className="flex">
         {info.thumbnail && (
-          <div className="flex-shrink-0 mx-auto md:mx-0">
-            <div className="relative w-48 h-28 md:w-56 md:h-32 rounded-lg overflow-hidden bg-gray-800">
+          <div className="relative w-36 md:w-48 flex-shrink-0">
+            <div className="relative w-full aspect-video">
               <Image
                 src={info.thumbnail}
                 alt={info.title}
@@ -46,79 +36,80 @@ export default function VideoInfo({ info }: VideoInfoProps) {
                 className="object-cover"
                 unoptimized
               />
+              {/* Fade into card bg */}
+              <div className="absolute inset-y-0 right-0 w-10
+                              bg-gradient-to-r from-transparent to-zinc-900/90" />
             </div>
           </div>
         )}
 
-        {/* Info */}
-        <div className="flex-1 min-w-0">
-          {/* Title */}
-          <h3 className="text-lg font-semibold text-white mb-3 line-clamp-2">
+        <div className="flex-1 min-w-0 px-4 py-4">
+          <h3 className="text-sm md:text-[0.95rem] font-semibold text-zinc-100
+                         line-clamp-2 leading-snug mb-3">
             {info.title}
           </h3>
 
-          {/* Meta Info Grid */}
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            {/* Duration */}
-            <div className="flex items-center gap-2 text-gray-400">
-              <Clock size={14} className="flex-shrink-0" />
-              <span>{info.duration_formatted}</span>
-            </div>
-
-            {/* Views */}
-            <div className="flex items-center gap-2 text-gray-400">
-              <Eye size={14} className="flex-shrink-0" />
-              <span>{formatNumber(info.view_count)} views</span>
-            </div>
-
-            {/* Uploader */}
-            {info.uploader && (
-              <div className="flex items-center gap-2 text-gray-400">
-                <User size={14} className="flex-shrink-0" />
-                <span className="truncate">{info.uploader}</span>
-              </div>
-            )}
-
-            {/* Upload Date */}
-            {info.upload_date && (
-              <div className="flex items-center gap-2 text-gray-400">
-                <Calendar size={14} className="flex-shrink-0" />
-                <span>{formatDate(info.upload_date)}</span>
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            <MetaItem icon={<Clock    size={12} />} label={info.duration_formatted} />
+            <MetaItem icon={<Eye      size={12} />} label={`${fmt(info.view_count)} views`} />
+            {info.uploader    && <MetaItem icon={<User     size={12} />} label={info.uploader}          truncate />}
+            {info.upload_date && <MetaItem icon={<Calendar size={12} />} label={fmtDate(info.upload_date)} />}
           </div>
+
+          {info.webpage_url && (
+            <a
+              href={info.webpage_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center gap-1.5 text-[11px]
+                         text-cyan-600 hover:text-cyan-400 transition-colors"
+            >
+              <ExternalLink size={11} />
+              Open original
+            </a>
+          )}
         </div>
       </div>
 
-      {/* Quality Info */}
-      <div className="mt-4 pt-4 border-t border-gray-600/50">
-        <p className="text-xs text-gray-500 mb-2">Download Quality</p>
-        <div className="flex flex-wrap gap-3">
-          {/* Video Quality */}
-          {info.best_video && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-900/30 border border-green-700/50 rounded-lg">
-              <MonitorPlay size={14} className="text-green-400" />
-              <span className="text-green-300 text-sm font-medium">
-                {info.best_video.resolution}
-                {info.best_video.fps && ` @ ${info.best_video.fps}fps`}
-              </span>
-            </div>
-          )}
+      {/* Quality badges */}
+      <div className="divider" />
+      <div className="px-4 py-3 flex flex-wrap items-center gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600 mr-1">
+          Best Available
+        </span>
 
-          {/* Audio Quality */}
-          {info.best_audio && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-900/30 border border-blue-700/50 rounded-lg">
-              <Volume2 size={14} className="text-blue-400" />
-              <span className="text-blue-300 text-sm font-medium">
-                {info.best_audio.format_note || 'Best Audio'}
-              </span>
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-gray-500 mt-2">
-          Video and audio will be merged automatically
-        </p>
+        {info.best_video && (
+          <span className="badge bg-cyan-900/30 border border-cyan-700/35 text-cyan-300">
+            <MonitorPlay size={11} className="text-cyan-400" />
+            {info.best_video.resolution}
+            {info.best_video.fps ? ` · ${info.best_video.fps}fps` : ''}
+          </span>
+        )}
+
+        {info.best_audio && (
+          <span className="badge bg-emerald-900/25 border border-emerald-700/30 text-emerald-300">
+            <Volume2 size={11} className="text-emerald-400" />
+            {info.best_audio.format_note || 'Best Audio'}
+          </span>
+        )}
+
+        <span className="ml-auto text-[10px] text-zinc-600">
+          Auto-merged with FFmpeg
+        </span>
       </div>
+    </div>
+  );
+}
+
+function MetaItem({
+  icon, label, truncate = false,
+}: {
+  icon: React.ReactNode; label: string; truncate?: boolean;
+}) {
+  return (
+    <div className={`flex items-center gap-1.5 text-xs text-zinc-500 ${truncate ? 'min-w-0' : ''}`}>
+      <span className="flex-shrink-0 text-zinc-600">{icon}</span>
+      <span className={truncate ? 'truncate' : ''}>{label}</span>
     </div>
   );
 }

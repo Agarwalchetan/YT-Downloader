@@ -38,6 +38,8 @@ dist/
 downloads/
 temp/
 tmp/
+backend/temp_downloads/*
+!backend/temp_downloads/.gitkeep
 
 # ===============================
 # Node / Next.js (Frontend)

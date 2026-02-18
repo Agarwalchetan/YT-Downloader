@@ -1,214 +1,314 @@
 # YT-Downloader
 
-A full-stack web application for downloading videos in maximum quality. Built with FastAPI (backend) and Next.js (frontend).
+A full-stack video downloader built with **FastAPI** and **Next.js 14**. Paste any video URL, pick a quality, and download — video and audio streams are automatically merged via FFmpeg.
 
-**For educational and personal use only.**
+> **For educational and personal use only.** See [DISCLAIMER.md](DISCLAIMER.md).
+
+**Author:** [Chetan Agarwal](https://github.com/Agarwalchetan)
+
+---
 
 ## Features
 
-- Download videos in maximum available quality
-- Automatic merging of best video + best audio streams
-- Clean REST API with FastAPI
-- Modern React frontend with Next.js and Tailwind CSS
-- Real-time download progress
-- Automatic temporary file cleanup
+- Download video + audio in maximum available quality (up to 4K)
+- Automatic FFmpeg stream merging — separate video and audio tracks merged into a single file
+- Audio-only extraction to MP3 at selectable bitrates (64 – 320 kbps)
+- Quality selector — choose exact resolution or bitrate, or let it auto-pick the best
+- Live dependency health bar — shows backend, FFmpeg, and yt-dlp status in the UI
+- Supports 1000+ platforms via yt-dlp (YouTube, Vimeo, Twitter/X, Instagram, and more)
+- Real-time download progress with shimmer progress bar
+- Automatic temp file cleanup — files deleted 5 minutes after download, plus a background sweep every 15 minutes
+- Clean dark UI with cyan accent — built with Tailwind CSS
+
+---
 
 ## Tech Stack
 
-### Backend
-- Python 3.10+
-- FastAPI
-- yt-dlp
-- FFmpeg
+| Layer | Technology |
+|-------|-----------|
+| Backend framework | Python 3.10+, FastAPI, Uvicorn |
+| Video extraction | yt-dlp |
+| Stream merging | FFmpeg |
+| Data validation | Pydantic v2 |
+| Frontend framework | Next.js 14 (App Router), React 18 |
+| Styling | Tailwind CSS v3, custom CSS design system |
+| HTTP client | Axios |
+| Icons | Lucide React |
+| Language | TypeScript |
 
-### Frontend
-- React 18
-- Next.js 14
-- Tailwind CSS
-- Axios
-- Lucide Icons
+---
 
 ## Project Structure
 
 ```
 yt-downloader/
 ├── backend/
-│   ├── main.py                 # FastAPI application entry
+│   ├── main.py                      # App entry point, CORS, lifespan, router mount
 │   ├── controllers/
-│   │   └── download_controller.py  # API endpoints
+│   │   └── download_controller.py   # HTTP route handlers (thin layer)
 │   ├── models/
-│   │   └── video.py            # Data models (Pydantic)
+│   │   └── video.py                 # All Pydantic models and enums
 │   ├── services/
-│   │   └── ytdlp_service.py    # Business logic (yt-dlp)
-│   └── utils/
-│       └── file_cleanup.py     # Temp file management
+│   │   └── ytdlp_service.py         # Core business logic (yt-dlp + FFmpeg)
+│   ├── utils/
+│   │   └── file_cleanup.py          # Temp file lifecycle management
+│   └── temp_downloads/              # Transient download storage (git-ignored)
 │
 ├── frontend/
 │   ├── app/
-│   │   ├── layout.tsx
-│   │   ├── page.tsx
-│   │   └── globals.css
+│   │   ├── layout.tsx               # Root HTML layout, Inter font, SEO metadata
+│   │   ├── page.tsx                 # Main page — all state and event handlers
+│   │   └── globals.css              # Global CSS and custom design system
 │   ├── components/
-│   │   ├── UrlInput.tsx
-│   │   ├── VideoInfo.tsx
-│   │   ├── DownloadButton.tsx
-│   │   └── ErrorMessage.tsx
+│   │   ├── UrlInput.tsx             # URL input with fetch button
+│   │   ├── VideoInfo.tsx            # Metadata card (thumbnail, stats, badges)
+│   │   ├── QualitySelector.tsx      # Video/audio toggle + quality dropdown
+│   │   ├── DownloadButton.tsx       # Hero CTA with progress bar
+│   │   ├── ErrorMessage.tsx         # Dismissible error alert
+│   │   ├── ServerStatusBar.tsx      # Live dependency health (backend/FFmpeg/yt-dlp)
+│   │   └── GitHubStats.tsx          # Live GitHub stars/forks/watchers
 │   └── lib/
-│       └── api.ts              # API client
+│       └── api.ts                   # Typed Axios API client
 │
 ├── requirements.txt
 ├── README.md
-└── DISCLAIMER.md
+├── API.md                           # Full API reference
+├── CONTRIBUTING.md                  # Development guide
+└── DISCLAIMER.md                    # Legal notice
 ```
+
+---
 
 ## Prerequisites
 
-1. **Python 3.10+** - [Download](https://www.python.org/downloads/)
-2. **Node.js 18+** - [Download](https://nodejs.org/)
-3. **FFmpeg** - Required for video/audio merging
-   - Windows: `winget install FFmpeg`
-   - macOS: `brew install ffmpeg`
-   - Linux: `sudo apt install ffmpeg`
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Python | 3.10+ | [python.org](https://www.python.org/downloads/) |
+| Node.js | 18+ | [nodejs.org](https://nodejs.org/) |
+| FFmpeg | any recent | Required for HD merging and MP3 extraction |
 
-## Installation
-
-### Backend Setup
+### Install FFmpeg
 
 ```bash
-# Navigate to project root
-cd yt-downloader
+# Windows (winget)
+winget install FFmpeg
 
-# Create virtual environment
-python -m venv venv
+# Windows (Chocolatey)
+choco install ffmpeg
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
+# macOS
+brew install ffmpeg
 
-# Install dependencies
-pip install -r requirements.txt
+# Ubuntu / Debian
+sudo apt install ffmpeg
+
+# Arch Linux
+sudo pacman -S ffmpeg
 ```
 
-### Frontend Setup
+Verify it works:
 
-```bash
-# Navigate to frontend directory
-cd frontend
-
-# Install dependencies
-npm install
-```
-
-## Running the Application
-
-### Start Backend Server
-
-```bash
-# From the backend directory
-cd backend
-uvicorn main:app --reload --port 8000
-```
-
-The API will be available at `http://localhost:8000`
-
-API Documentation: `http://localhost:8000/docs`
-
-### Start Frontend Development Server
-
-```bash
-# From the frontend directory
-cd frontend
-npm run dev
-```
-
-The frontend will be available at `http://localhost:3000`
-
-## API Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/info` | Fetch video metadata |
-| POST | `/api/download` | Download video in best quality |
-| GET | `/api/health` | Health check |
-
-### Example: Fetch Video Info
-
-```bash
-curl -X POST http://localhost:8000/api/info \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID"}'
-```
-
-### Example: Download Video
-
-```bash
-curl -X POST http://localhost:8000/api/download \
-  -H "Content-Type: application/json" \
-  -d '{"url": "https://www.youtube.com/watch?v=VIDEO_ID"}' \
-  --output video.mp4
-```
-
-## Architecture
-
-This project follows an MVC-like architecture:
-
-- **Model** (`models/`): Data structures and validation (Pydantic models)
-- **View** (`frontend/`): React UI components
-- **Controller** (`controllers/`): HTTP request handling, thin layer
-- **Service** (`services/`): Business logic, yt-dlp integration
-
-### Data Flow
-
-```
-User Input → Frontend → API Controller → Service (yt-dlp) → FFmpeg → Stream → Download
-```
-
-## Configuration
-
-### Environment Variables
-
-Create `.env` files for configuration:
-
-**Backend** (optional):
-```env
-# No required env vars, but you can customize:
-# DOWNLOAD_DIR=/path/to/temp/downloads
-```
-
-**Frontend** (`frontend/.env.local`):
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000
-```
-
-## Development Notes
-
-- Downloaded files are stored temporarily and cleaned up automatically
-- The backend uses async/await for non-blocking I/O
-- CORS is configured for local development (localhost:3000)
-- The frontend uses client-side rendering for the download page
-
-## Troubleshooting
-
-### FFmpeg not found
-Ensure FFmpeg is installed and in your system PATH:
 ```bash
 ffmpeg -version
 ```
 
-### CORS errors
-Make sure the backend is running on port 8000 and the frontend on port 3000.
+> **Without FFmpeg:** The app still works but falls back to yt-dlp's single-stream "best" format. You won't get separate HD video + audio merged together, and audio extraction to MP3 will fail.
 
-### Download fails
-- Check the video URL is valid and accessible
-- Some videos may have restrictions
-- Check backend logs for detailed error messages
+---
 
-## License
+## Installation
 
-This project is for educational purposes only. See [DISCLAIMER.md](DISCLAIMER.md).
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Agarwalchetan/YT-Downloader.git
+cd YT-Downloader
+```
+
+### 2. Backend setup
+
+```bash
+# Create and activate a virtual environment
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+# macOS / Linux
+source venv/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
+### 3. Frontend setup
+
+```bash
+cd frontend
+npm install
+```
+
+---
+
+## Running
+
+You need two terminals — one for the backend, one for the frontend.
+
+### Terminal 1 — Backend
+
+```bash
+# From the project root (with venv active)
+cd backend
+uvicorn main:app --reload --port 8000
+```
+
+- API base: `http://localhost:8000`
+- Interactive docs: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+### Terminal 2 — Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+- App: `http://localhost:3000`
+
+---
+
+## Configuration
+
+### Frontend environment variables
+
+Create `frontend/.env.local`:
+
+```env
+# Backend API URL (defaults to http://localhost:8000 if not set)
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+### Backend environment variables
+
+The backend has no required environment variables. The download directory is resolved automatically to `backend/temp_downloads/` relative to the source files.
+
+---
+
+## API Reference
+
+See [API.md](API.md) for the full API reference including request/response schemas, quality option values, and curl examples.
+
+**Quick overview:**
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/status` | Dependency health check (backend, FFmpeg, yt-dlp) |
+| `POST` | `/api/info` | Fetch video metadata without downloading |
+| `POST` | `/api/download` | Download video or audio file |
+| `GET` | `/api/health` | Simple liveness probe |
+
+---
+
+## Architecture
+
+The backend follows an MVC-like layered pattern:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Frontend (Next.js)                                      │
+│  page.tsx → lib/api.ts (Axios) → HTTP                   │
+└──────────────────────┬──────────────────────────────────┘
+                       │ HTTP (JSON / blob stream)
+┌──────────────────────▼──────────────────────────────────┐
+│  Controller layer  (controllers/download_controller.py)  │
+│  Route handling, request validation, response building   │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────┐
+│  Service layer  (services/ytdlp_service.py)              │
+│  yt-dlp extraction, FFmpeg merging, format selection     │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────┐
+│  Models  (models/video.py)                               │
+│  Pydantic schemas, enums, computed properties            │
+└─────────────────────────────────────────────────────────┘
+                       │
+┌──────────────────────▼──────────────────────────────────┐
+│  Utils  (utils/file_cleanup.py)                          │
+│  Background thread cleanup, per-request deletion         │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Download flow
+
+```
+User pastes URL
+  → Frontend calls POST /api/info
+  → yt-dlp extracts metadata (thread pool, non-blocking)
+  → UI shows thumbnail, title, quality options
+
+User clicks Download
+  → Frontend calls POST /api/download
+  → yt-dlp downloads stream(s) to temp_downloads/
+  → FFmpeg merges video + audio (if applicable)
+  → Backend streams file to browser as blob
+  → Frontend creates object URL → triggers <a> click → file saved
+  → BackgroundTask schedules file deletion after 5 minutes
+```
+
+### File cleanup — two layers
+
+1. **Per-request** — After each download response finishes streaming, a `BackgroundTask` schedules deletion of that specific file after 300 seconds.
+2. **Global sweep** — A daemon thread started at app startup scans `temp_downloads/` every 15 minutes and deletes any media file older than 30 minutes. Only files with known media extensions are touched (`.mp4`, `.mkv`, `.webm`, `.mp3`, `.m4a`, `.opus`, `.part`, `.tmp`).
+
+---
+
+## Troubleshooting
+
+### FFmpeg not found in status bar
+
+FFmpeg is installed but not on your PATH. Add the FFmpeg `bin/` directory to your system `PATH` environment variable and restart the backend.
+
+```bash
+# Verify it's accessible:
+ffmpeg -version
+```
+
+### CORS errors in browser console
+
+The backend only allows `localhost:3000` and `localhost:3001` by default. Make sure:
+- Backend is running on port `8000`
+- Frontend is running on port `3000`
+
+If you changed ports, update the `allow_origins` list in `backend/main.py`.
+
+### Download fails with "Requested format is not available"
+
+yt-dlp's format availability depends on the platform and the video. Try:
+- Selecting a lower quality in the Quality dropdown
+- Choosing "Best Quality (Auto)" which lets yt-dlp pick the best available format
+
+### Video downloads as `.webm` instead of `.mp4`
+
+This happens when FFmpeg is not installed. Install FFmpeg to enable proper MP4 merging.
+
+### "Failed to fetch video info" for YouTube
+
+YouTube periodically changes its API. Update yt-dlp:
+
+```bash
+pip install --upgrade yt-dlp
+```
+
+---
 
 ## Contributing
 
-This is an educational project. Feel free to fork and modify for learning purposes.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the development guide, project conventions, and how to submit changes.
+
+---
+
+## License
+
+This project is for educational purposes only. See [DISCLAIMER.md](DISCLAIMER.md) for the full legal notice.
