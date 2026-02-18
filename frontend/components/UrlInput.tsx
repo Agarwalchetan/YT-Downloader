@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, KeyboardEvent } from 'react';
-import { Search, X, Loader2 } from 'lucide-react';
+import { KeyboardEvent } from 'react';
+import { Search, X, Loader2, Link2 } from 'lucide-react';
 
 interface UrlInputProps {
   value: string;
@@ -13,88 +13,79 @@ interface UrlInputProps {
 }
 
 export default function UrlInput({
-  value,
-  onChange,
-  onSubmit,
-  onClear,
-  isLoading = false,
-  disabled = false,
+  value, onChange, onSubmit, onClear,
+  isLoading = false, disabled = false,
 }: UrlInputProps) {
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !isLoading && !disabled) {
-      onSubmit();
-    }
+  const handleKey = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isLoading && !disabled) onSubmit();
   };
 
   return (
-    <div className="space-y-4">
-      <label htmlFor="url-input" className="block text-sm font-medium text-gray-300">
+    <div className="space-y-3">
+      <label
+        htmlFor="url-input"
+        className="flex items-center gap-2 text-[11px] font-semibold
+                   uppercase tracking-widest text-zinc-500"
+      >
+        <Link2 size={11} />
         Video URL
       </label>
-      
-      <div className="relative flex gap-3">
-        {/* Input Field */}
+
+      <div className="flex gap-2.5">
+        {/* Input wrapper */}
         <div className="relative flex-1">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none">
+            <Search size={16} />
+          </div>
+
           <input
             id="url-input"
             type="url"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Paste video URL here..."
+            onChange={e => onChange(e.target.value)}
+            onKeyDown={handleKey}
+            placeholder="Paste YouTube, Vimeo or any video URL…"
             disabled={disabled || isLoading}
-            className="w-full px-4 py-3 pl-11 bg-gray-700/50 border border-gray-600 rounded-xl 
-                     text-white placeholder-gray-400 
-                     focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     transition-all duration-200"
+            className="input-field w-full rounded-xl py-3.5 pl-10 pr-10 text-sm
+                       disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          
-          {/* Search Icon */}
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-            <Search size={20} />
-          </div>
-          
-          {/* Clear Button */}
+
           {value && !isLoading && !disabled && (
             <button
               onClick={onClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 
-                       hover:text-white transition-colors"
-              aria-label="Clear input"
+              aria-label="Clear"
+              className="absolute right-3 top-1/2 -translate-y-1/2
+                         text-zinc-600 hover:text-zinc-300 transition-colors"
             >
-              <X size={18} />
+              <X size={15} />
             </button>
           )}
         </div>
 
-        {/* Submit Button */}
+        {/* Fetch button */}
         <button
           onClick={onSubmit}
           disabled={isLoading || disabled || !value.trim()}
-          className="px-6 py-3 bg-primary-600 hover:bg-primary-700 
-                   text-white font-medium rounded-xl
-                   focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 
-                   focus:ring-offset-gray-800
-                   disabled:opacity-50 disabled:cursor-not-allowed
-                   transition-all duration-200 flex items-center gap-2"
+          className="btn-secondary flex items-center gap-2 px-5 py-3.5 rounded-xl
+                     text-sm font-semibold whitespace-nowrap
+                     disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {isLoading ? (
             <>
-              <Loader2 size={18} className="animate-spin" />
-              <span>Loading...</span>
+              <Loader2 size={15} className="animate-spin" />
+              Fetching…
             </>
           ) : (
             <>
-              <Search size={18} />
-              <span>Fetch</span>
+              <Search size={15} />
+              Fetch Info
             </>
           )}
         </button>
       </div>
 
-      <p className="text-xs text-gray-500">
-        Supports YouTube, Vimeo, and many other platforms
+      <p className="text-[11px] text-zinc-600">
+        Supports YouTube, Vimeo, Twitter/X, Instagram and 1000+ platforms via yt-dlp
       </p>
     </div>
   );

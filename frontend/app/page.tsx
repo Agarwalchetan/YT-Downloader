@@ -7,42 +7,33 @@ import DownloadButton from '@/components/DownloadButton';
 import ErrorMessage from '@/components/ErrorMessage';
 import QualitySelector from '@/components/QualitySelector';
 import ServerStatusBar from '@/components/ServerStatusBar';
-import { 
-  fetchVideoInfo, 
-  downloadVideo, 
+import GitHubStats from '@/components/GitHubStats';
+import {
+  fetchVideoInfo,
+  downloadVideo,
   VideoInfo as VideoInfoType,
   DownloadType,
-  QualityOption
+  QualityOption,
 } from '@/lib/api';
+import { Download } from 'lucide-react';
 
 type Status = 'idle' | 'fetching' | 'ready' | 'downloading' | 'error';
 
 export default function Home() {
-  const [url, setUrl] = useState('');
-  const [videoInfo, setVideoInfo] = useState<VideoInfoType | null>(null);
-  const [status, setStatus] = useState<Status>('idle');
-  const [error, setError] = useState<string | null>(null);
+  const [url, setUrl]                         = useState('');
+  const [videoInfo, setVideoInfo]             = useState<VideoInfoType | null>(null);
+  const [status, setStatus]                   = useState<Status>('idle');
+  const [error, setError]                     = useState<string | null>(null);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  
-  // Quality selection state
-  const [downloadType, setDownloadType] = useState<DownloadType>('video');
+  const [downloadType, setDownloadType]       = useState<DownloadType>('video');
   const [selectedQuality, setSelectedQuality] = useState<string | null>(null);
 
   const handleFetchInfo = async () => {
-    if (!url.trim()) {
-      setError('Please enter a video URL');
-      return;
-    }
-
-    setError(null);
-    setVideoInfo(null);
-    setStatus('fetching');
-    setSelectedQuality(null);
-
+    if (!url.trim()) { setError('Please enter a video URL'); return; }
+    setError(null); setVideoInfo(null); setStatus('fetching'); setSelectedQuality(null);
     try {
       const info = await fetchVideoInfo(url);
-      setVideoInfo(info);
-      setStatus('ready');
+      setVideoInfo(info); setStatus('ready');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch video info');
       setStatus('error');
@@ -51,22 +42,10 @@ export default function Home() {
 
   const handleDownload = async () => {
     if (!url.trim()) return;
-
-    setError(null);
-    setStatus('downloading');
-    setDownloadProgress(0);
-
+    setError(null); setStatus('downloading'); setDownloadProgress(0);
     try {
-      await downloadVideo(
-        url,
-        downloadType,
-        selectedQuality || undefined,
-        (progress) => {
-          setDownloadProgress(progress);
-        }
-      );
-      setStatus('ready');
-      setDownloadProgress(100);
+      await downloadVideo(url, downloadType, selectedQuality || undefined, (p) => setDownloadProgress(p));
+      setStatus('ready'); setDownloadProgress(100);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed');
       setStatus('error');
@@ -74,44 +53,52 @@ export default function Home() {
   };
 
   const handleClear = () => {
-    setUrl('');
-    setVideoInfo(null);
-    setStatus('idle');
-    setError(null);
-    setDownloadProgress(0);
-    setSelectedQuality(null);
-    setDownloadType('video');
+    setUrl(''); setVideoInfo(null); setStatus('idle');
+    setError(null); setDownloadProgress(0);
+    setSelectedQuality(null); setDownloadType('video');
   };
 
   const handleDownloadTypeChange = (type: DownloadType) => {
-    setDownloadType(type);
-    setSelectedQuality(null); // Reset quality when switching type
+    setDownloadType(type); setSelectedQuality(null);
   };
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="container mx-auto px-4 py-12 max-w-3xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            YT-Downloader
-          </h1>
-          <p className="text-gray-400 text-lg">
-            Download videos in your preferred quality
-          </p>
-          <p className="text-gray-500 text-sm mt-2">
-            For educational purposes only
-          </p>
-        </div>
+  const showContent = videoInfo !== null;
 
-        {/* Server Status Bar */}
+  return (
+    <main className="bg-app min-h-screen">
+      <div className="container mx-auto px-4 py-14 max-w-2xl">
+
+        {/* ── Header ──────────────────────────────────────────── */}
+        <header className="text-center mb-10">
+          {/* Icon */}
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl
+                          bg-cyan-700/20 border border-cyan-700/30 mb-5">
+            <Download size={26} className="text-cyan-400" />
+          </div>
+
+          {/* Title */}
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-3">
+            <span className="gradient-text">YT-Downloader</span>
+          </h1>
+
+          {/* Tagline */}
+          <p className="text-zinc-400 text-base max-w-sm mx-auto mb-5">
+            Download any video in maximum quality, fast.
+          </p>
+
+          {/* GitHub stats */}
+          <GitHubStats />
+        </header>
+
+        {/* ── Server status ────────────────────────────────────── */}
         <div className="mb-6">
           <ServerStatusBar />
         </div>
 
-        {/* Main Card */}
-        <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-6 md:p-8 border border-gray-700">
-          {/* URL Input */}
+        {/* ── Main card ────────────────────────────────────────── */}
+        <div className="glass-elevated rounded-3xl p-6 md:p-8 space-y-6">
+
+          {/* URL input — always visible */}
           <UrlInput
             value={url}
             onChange={setUrl}
@@ -121,29 +108,27 @@ export default function Home() {
             disabled={status === 'downloading'}
           />
 
-          {/* Error Message */}
+          {/* Error */}
           {error && (
-            <ErrorMessage 
-              message={error} 
-              onDismiss={() => setError(null)} 
-            />
+            <ErrorMessage message={error} onDismiss={() => setError(null)} />
           )}
 
-          {/* Video Info */}
-          {videoInfo && (
-            <div className="mt-6">
-              <VideoInfo info={videoInfo} />
+          {/* Video info */}
+          {showContent && (
+            <div className="animate-enter">
+              <VideoInfo info={videoInfo!} />
             </div>
           )}
 
-          {/* Quality Selector */}
-          {videoInfo && (
-            <div className="mt-6">
+          {/* Quality selector */}
+          {showContent && (
+            <div className="animate-enter delay-100">
+              <div className="divider mb-6" />
               <QualitySelector
                 downloadType={downloadType}
                 onDownloadTypeChange={handleDownloadTypeChange}
-                videoQualities={videoInfo.video_qualities || []}
-                audioQualities={videoInfo.audio_qualities || []}
+                videoQualities={videoInfo!.video_qualities || []}
+                audioQualities={videoInfo!.audio_qualities || []}
                 selectedQuality={selectedQuality}
                 onQualityChange={setSelectedQuality}
                 disabled={status === 'downloading'}
@@ -151,9 +136,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* Download Button */}
-          {videoInfo && (
-            <div className="mt-6">
+          {/* Download button */}
+          {showContent && (
+            <div className="animate-enter delay-200">
               <DownloadButton
                 onClick={handleDownload}
                 isLoading={status === 'downloading'}
@@ -165,15 +150,33 @@ export default function Home() {
           )}
         </div>
 
-        {/* Footer */}
-        <footer className="mt-12 text-center text-gray-500 text-sm">
-          <p>
-            This tool is for educational purposes only.
+        {/* ── Footer ───────────────────────────────────────────── */}
+        <footer className="mt-10 text-center space-y-1.5">
+          <p className="text-zinc-500 text-sm">
+            Developed by{' '}
+            <a
+              href="https://github.com/Agarwalchetan"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-500 hover:text-cyan-300 font-medium transition-colors"
+            >
+              Chetan Agarwal
+            </a>
+            {' · '}
+            <a
+              href="https://github.com/Agarwalchetan/YT-Downloader"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-cyan-500 hover:text-cyan-300 transition-colors"
+            >
+              Source on GitHub
+            </a>
           </p>
-          <p className="mt-1">
-            Please respect content creators and platform terms of service.
+          <p className="text-zinc-700 text-xs">
+            For educational purposes only. Respect content creators and platform terms of service.
           </p>
         </footer>
+
       </div>
     </main>
   );

@@ -2,11 +2,17 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
-  title: 'YT-Downloader - Max Quality Video Downloader',
-  description: 'Download videos in maximum quality. Educational purposes only.',
+  title: 'YT-Downloader — by Chetan Agarwal',
+  description: 'Download videos in maximum quality with audio merging. Built by Chetan Agarwal.',
+  authors: [{ name: 'Chetan Agarwal', url: 'https://github.com/Agarwalchetan' }],
+  keywords: ['youtube downloader', 'video downloader', 'yt-dlp', 'chetan agarwal'],
 }
 
 export default function RootLayout({
@@ -15,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body className={inter.className}>{children}</body>
     </html>
   )

@@ -1,126 +1,126 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Server, Clapperboard, Music2, RefreshCw } from 'lucide-react';
+import { Server, Cpu, Zap, RefreshCw, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { getServerStatus, ServerStatus } from '@/lib/api';
 
-interface StatusIndicatorProps {
-  label: string;
-  isOnline: boolean;
-  icon: React.ReactNode;
-  detail?: string;
-}
+export default function ServerStatusBar() {
+  const [status, setStatus]           = useState<ServerStatus | null>(null);
+  const [loading, setLoading]         = useState(true);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
 
-function StatusIndicator({ label, isOnline, icon, detail }: StatusIndicatorProps) {
+  const check = async () => {
+    setLoading(true);
+    try {
+      setStatus(await getServerStatus());
+      setLastChecked(new Date());
+    } catch {
+      setStatus({ backend: false, ffmpeg: false, ytdlp: false, ytdlp_version: null });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    check();
+    const id = setInterval(check, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const allGood = status?.backend && status?.ffmpeg && status?.ytdlp;
+  const partial = status?.backend && (!status?.ffmpeg || !status?.ytdlp);
+  const offline = !status || !status.backend;
+
+  const borderCls = offline
+    ? 'border-red-500/20 bg-red-500/[0.04]'
+    : partial
+    ? 'border-amber-500/20 bg-amber-500/[0.04]'
+    : 'border-emerald-500/20 bg-emerald-500/[0.04]';
+
+  const dotCls = offline
+    ? 'bg-red-500'
+    : partial
+    ? 'bg-amber-500'
+    : 'bg-emerald-500';
+
+  const labelCls = offline
+    ? 'text-red-400'
+    : partial
+    ? 'text-amber-400'
+    : 'text-emerald-400';
+
+  const labelText = offline
+    ? 'Offline'
+    : partial
+    ? 'Degraded'
+    : 'All Systems Operational';
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="text-gray-400">{icon}</div>
-      <span className="text-sm text-gray-300">{label}</span>
-      <div className="flex items-center gap-1">
-        <div
-          className={`w-2 h-2 rounded-full ${
-            isOnline ? 'bg-green-500' : 'bg-red-500'
-          }`}
-        />
-        <span className={`text-xs ${isOnline ? 'text-green-400' : 'text-red-400'}`}>
-          {isOnline ? 'Online' : 'Offline'}
-        </span>
+    <div className={`glass rounded-2xl border ${borderCls} px-4 py-3`}>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Overall */}
+        <div className="flex items-center gap-2">
+          <span className={`inline-block w-2 h-2 rounded-full pulse-dot ${dotCls}`} />
+          <span className={`text-xs font-semibold tracking-widest uppercase ${labelCls}`}>
+            {labelText}
+          </span>
+        </div>
+
+        {/* Per-service */}
+        {status && (
+          <div className="flex items-center gap-4 flex-wrap">
+            <StatusPill label="Backend" ok={status.backend} icon={<Server size={11} />} />
+            <StatusPill label="FFmpeg"  ok={status.ffmpeg}  icon={<Cpu size={11} />}
+              detail={status.ffmpeg ? undefined : 'limited'} />
+            <StatusPill label="yt-dlp" ok={status.ytdlp}   icon={<Zap size={11} />}
+              detail={status.ytdlp_version ?? undefined} />
+          </div>
+        )}
+
+        {/* Time + refresh */}
+        <div className="flex items-center gap-2 ml-auto">
+          {lastChecked && (
+            <span className="text-[10px] text-zinc-600 tabular-nums hidden sm:block">
+              {lastChecked.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          )}
+          <button
+            onClick={check}
+            disabled={loading}
+            title="Refresh"
+            className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300
+                       hover:bg-white/5 transition-all disabled:opacity-40"
+          >
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
       </div>
-      {detail && (
-        <span className="text-xs text-gray-500">({detail})</span>
+
+      {/* FFmpeg warning */}
+      {status?.backend && !status.ffmpeg && (
+        <div className="mt-2.5 flex items-center gap-2 text-amber-400/80 text-xs">
+          <AlertTriangle size={11} />
+          <span>FFmpeg not found — install it for HD video + audio merging</span>
+        </div>
       )}
     </div>
   );
 }
 
-export default function ServerStatusBar() {
-  const [status, setStatus] = useState<ServerStatus | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [lastChecked, setLastChecked] = useState<Date | null>(null);
-
-  const checkStatus = async () => {
-    setIsLoading(true);
-    try {
-      const serverStatus = await getServerStatus();
-      setStatus(serverStatus);
-      setLastChecked(new Date());
-    } catch {
-      setStatus({
-        backend: false,
-        ffmpeg: false,
-        ytdlp: false,
-        ytdlp_version: null,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    checkStatus();
-    
-    // Check status every 30 seconds
-    const interval = setInterval(checkStatus, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const allOnline = status?.backend && status?.ffmpeg && status?.ytdlp;
-
+function StatusPill({
+  label, ok, icon, detail,
+}: {
+  label: string; ok: boolean; icon: React.ReactNode; detail?: string;
+}) {
   return (
-    <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-medium text-gray-300 flex items-center gap-2">
-          <div
-            className={`w-2.5 h-2.5 rounded-full ${
-              allOnline ? 'bg-green-500' : status?.backend ? 'bg-yellow-500' : 'bg-red-500'
-            }`}
-          />
-          Server Status
-        </h3>
-        <button
-          onClick={checkStatus}
-          disabled={isLoading}
-          className="text-gray-400 hover:text-gray-300 transition-colors disabled:opacity-50"
-          title="Refresh status"
-        >
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-        </button>
-      </div>
-
-      {isLoading && !status ? (
-        <div className="text-sm text-gray-400">Checking status...</div>
-      ) : (
-        <div className="space-y-2">
-          <StatusIndicator
-            label="Backend"
-            isOnline={status?.backend ?? false}
-            icon={<Server size={14} />}
-          />
-          <StatusIndicator
-            label="FFmpeg"
-            isOnline={status?.ffmpeg ?? false}
-            icon={<Clapperboard size={14} />}
-            detail={status?.ffmpeg ? 'Video merging enabled' : 'Limited quality'}
-          />
-          <StatusIndicator
-            label="yt-dlp"
-            isOnline={status?.ytdlp ?? false}
-            icon={<Music2 size={14} />}
-            detail={status?.ytdlp_version || undefined}
-          />
-        </div>
-      )}
-
-      {lastChecked && (
-        <p className="text-xs text-gray-600 mt-3">
-          Last checked: {lastChecked.toLocaleTimeString()}
-        </p>
-      )}
-
-      {!status?.ffmpeg && status?.backend && (
-        <p className="text-xs text-yellow-500/80 mt-2">
-          FFmpeg not found. Install FFmpeg for best quality downloads.
-        </p>
+    <div className="flex items-center gap-1.5">
+      <span className={ok ? 'text-emerald-400' : 'text-red-400'}>{icon}</span>
+      <span className="text-xs text-zinc-400">{label}</span>
+      {ok
+        ? <CheckCircle2 size={10} className="text-emerald-500" />
+        : <XCircle      size={10} className="text-red-500" />}
+      {detail && (
+        <span className="text-[10px] text-zinc-600 hidden md:inline">({detail})</span>
       )}
     </div>
   );
